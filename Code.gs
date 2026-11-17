@@ -40,7 +40,11 @@ function doGet() {
 
   if (settings.logoUrl && /^https?:\/\//i.test(settings.logoUrl.trim())) {
     try {
-      output.setFaviconUrl(settings.logoUrl.trim());
+      let faviconUrl = settings.logoUrl.trim();
+      if (!/\.(png|ico)$/i.test(faviconUrl)) {
+        faviconUrl += (faviconUrl.includes('?') ? '&' : '?') + 'ext=.png';
+      }
+      output.setFaviconUrl(faviconUrl);
     } catch (e) {
       Logger.log('Cannot set favicon URL: ' + e);
     }
