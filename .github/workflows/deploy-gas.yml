@@ -1,0 +1,41 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.CLASPRC_JSON }}" ] || [ -z "${{ secrets.SCRIPT_ID }}" ]; then
+            echo "ERROR: Please set CLASPRC_JSON and SCRIPT_ID in GitHub Repository Secrets first."
+            exit 1
+          fi
+
+      - name: Setup clasp credentials & project
+        run: |
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"."}' > .clasp.json
+
+      - name: Push & Deploy to Apps Script
+        run: |
+          npm install -g @google/clasp
+          clasp push --force
+          if [ -n "${{ secrets.DEPLOYMENT_ID }}" ]; then
+            clasp deploy -i "${{ secrets.DEPLOYMENT_ID }}" -d "Auto-deploy from GitHub"
+          else
+            clasp deploy -d "Auto-deploy from GitHub"
+          fi

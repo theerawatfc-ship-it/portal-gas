@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ศูนย์รวมระบบสารสนเทศ</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Prompt', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden transition-opacity"></div>
+
+  <!-- Global Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/45 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl px-6 py-5 flex items-center gap-3.5 border border-slate-200">
+      <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <span id="loadingText" class="text-sm font-medium text-slate-700">กำลังเชื่อมต่อ Google Sheets...</span>
+    </div>
+  </div>
+
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-72 bg-slate-900 text-slate-100 flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out shadow-xl lg:shadow-none">
+      <!-- Brand -->
+      <div class="p-4 border-b border-slate-800 flex items-center gap-3">
+        <div id="sidebarLogoWrap" class="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-amber-400/60 shrink-0 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+          <img id="sidebarLogoImg" src="" alt="โลโก้หน่วยงาน" class="w-full h-full object-cover hidden" />
+          <i id="sidebarLogoFallback" data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h1 id="sidebarSiteName" class="font-semibold text-sm text-white truncate">ชื่อหน่วยงาน / โรงเรียนของคุณ</h1>
+          <p id="sidebarSiteSubtitle" class="text-xs text-slate-400 truncate">ศูนย์รวมระบบสารสนเทศ</p>
+        </div>
+        <button id="closeSidebarBtn" type="button" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" aria-label="ปิดเมนู">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Category Navigation -->
+      <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <div class="px-2 pb-1.5 flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">หมวดหมู่ระบบ</span>
+          <button id="addCategoryBtn" type="button" class="hidden inline-flex items-center gap-1 text-xs font-medium text-amber-400 hover:text-amber-300 px-2 py-1 rounded-md hover:bg-slate-800 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>เพิ่มหมวด</span>
+          </button>
+        </div>
+
+        <!-- All Systems Tab -->
+        <button id="allSystemsTab" type="button" class="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
+          <span class="flex items-center gap-2.5 min-w-0">
+            <span class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            </span>
+            <span class="truncate">ระบบทั้งหมด</span>
+          </span>
+          <span id="allCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
+        </button>
+
+        <!-- Dynamic Category Tabs -->
+        <div id="categoryList" class="space-y-1 pt-1"></div>
+      </div>
+
+      <!-- Sidebar Footer Utilities -->
+      <div class="p-3 border-t border-slate-800 space-y-2 bg-slate-900/90">
+        <button id="openSettingsBtn" type="button" class="hidden w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 transition-colors">
+          <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+          <span>ตั้งค่าเว็บไซต์ &amp; รหัสแอดมิน</span>
+        </button>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="exportJsonBtn" type="button" class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="สำรองข้อมูลเป็นไฟล์ JSON">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>ส่งออก JSON</span>
+          </button>
+          <button id="importJsonBtn" type="button" class="hidden flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="นำเข้าข้อมูลจากไฟล์ JSON">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span>นำเข้า JSON</span>
+          </button>
+          <button id="refreshDataBtn" type="button" class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="โหลดข้อมูลล่าสุดจาก Google Sheets">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>รีเฟรชข้อมูล</span>
+          </button>
+        </div>
+        <div class="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-0.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>เชื่อมต่อ Google Sheets &amp; Drive</span>
+        </div>
+        <input id="importFileInput" type="file" accept=".json,application/json" class="hidden" />
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 min-w-0 flex flex-col">
+      <!-- Top Header Bar -->
+      <header class="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 flex-1 min-w-[200px]">
+            <button id="openSidebarBtn" type="button" class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" aria-label="เปิดเมนู">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="relative flex-1 max-w-md">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input
+                id="searchInput"
+                type="search"
+                placeholder="ค้นหาระบบ, ลิงก์, หรือคำอธิบาย..."
+                class="w-full pl-10 pr-4 py-2 text-sm bg-slate-100 border border-transparent focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Edit Mode Toggle -->
+            <button id="toggleEditModeBtn" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border transition-all">
+              <i data-lucide="lock" class="w-4 h-4" id="editModeIcon"></i>
+              <span id="editModeLabel">โหมดแก้ไข</span>
+            </button>
+            <!-- Add System Button (visible in Edit Mode) -->
+            <button id="addSystemBtn" type="button" class="hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">เพิ่มปุ่มระบบ</span>
+              <span class="sm:hidden">เพิ่ม</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body -->
+      <main class="flex-1 px-4 sm:px-6 py-5 max-w-7xl w-full mx-auto space-y-6">
+        <!-- Hero Banner -->
+        <section class="relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 h-40 sm:h-48">
+          <img
+            id="heroBannerImg"
+            src=""
+            alt="แบนเนอร์พอร์ทัล"
+            class="w-full h-full object-cover opacity-55 hidden"
+          />
+          <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/65 to-slate-900/25"></div>
+          <div class="absolute inset-0 p-5 sm:p-7 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <span id="heroBadgeEl" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-xs">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span id="heroBadgeText">พอร์ทัลรวมระบบสารสนเทศ</span>
+              </span>
+              <span id="editModeBanner" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                <span>กำลังเปิดโหมดแก้ไข: บันทึกตรงสู่ Google Sheets &amp; Drive</span>
+              </span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div class="min-w-0">
+                <h2 id="activeCategoryTitle" class="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">ระบบทั้งหมด</h2>
+                <p id="activeCategoryDesc" class="text-xs sm:text-sm text-slate-200/90 mt-0.5 line-clamp-2">รวมลิงก์ระบบงานและบริการออนไลน์ไว้ในที่เดียว</p>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-slate-200 shrink-0">
+                <span class="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
+                  แสดง <strong id="visibleCount" class="text-white">0</strong> ระบบ
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Systems Grid -->
+        <section>
+          <div id="systemsGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-6 py-2"></div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="hidden text-center py-14 px-6 bg-white rounded-2xl border border-dashed border-slate-300">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+              <i data-lucide="folder-open" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800">ยังไม่มีปุ่มระบบในหมวดหมู่นี้</h3>
+            <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">เปิด "โหมดแก้ไข" (รหัสผ่านเริ่มต้น 1234) เพื่อตั้งค่าหน่วยงาน สร้างหมวดหมู่ และเพิ่มปุ่มระบบพร้อมอัปโหลดรูปภาพ</p>
+            <button id="emptyAddBtn" type="button" class="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>เพิ่มปุ่มระบบแรก</span>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer id="footerTextEl" class="px-6 py-4 border-t border-slate-200 bg-white text-center text-xs text-slate-500">
+        ศูนย์รวมระบบสารสนเทศภายในองค์กร
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modal: Admin PIN -->
+  <div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
+          <span>ยืนยันสิทธิ์ผู้ดูแลระบบ</span>
+        </h3>
+        <button id="closePinModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="pinForm" class="p-5 space-y-4">
+        <div>
+          <label for="adminPinInput" class="block text-xs font-semibold text-slate-700 mb-1.5">กรอกรหัสผ่านแอดมิน (PIN)</label>
+          <input id="adminPinInput" type="password" required autocomplete="current-password" placeholder="รหัสผ่านเริ่มต้น: 1234" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+          <p class="text-[11px] text-slate-500 mt-1.5">รหัสผ่านตรวจสอบกับชีต Settings บน Google Sheets</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button id="cancelPinModalBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors">ปลดล็อกโหมดแก้ไข</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Site Settings -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-800">ตั้งค่าเว็บไซต์ &amp; แบรนด์</h3>
+        <button id="closeSettingsModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="settingsForm" class="p-5 overflow-y-auto space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="setSiteNameInput" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อหน่วยงาน / โรงเรียน</label>
+            <input id="setSiteNameInput" type="text" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+          </div>
+          <div>
+            <label for="setSiteSubtitleInput" class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายรอง (Sidebar)</label>
+            <input id="setSiteSubtitleInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="setHeroBadgeInput" class="block text-xs font-semibold text-slate-700 mb-1">ป้ายบนแบนเนอร์ (Badge)</label>
+            <input id="setHeroBadgeInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+          </div>
+          <div>
+            <label for="setHeroTitleInput" class="block text-xs font-semibold text-slate-700 mb-1">หัวข้อหน้า "ระบบทั้งหมด"</label>
+            <input id="setHeroTitleInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label for="setHeroDescInput" class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายหน้าแรก (Hero Description)</label>
+          <input id="setHeroDescInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+        </div>
+
+        <div>
+          <label for="setFooterInput" class="block text-xs font-semibold text-slate-700 mb-1">ข้อความท้ายเว็บ (Footer)</label>
+          <input id="setFooterInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+        </div>
+
+        <!-- Logo Upload -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label class="block text-xs font-semibold text-slate-700">โลโก้หน่วยงาน (อัปโหลดเก็บใน Google Drive)</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>อัปโหลดโลโก้</span>
+              <input id="setLogoFileInput" type="file" accept="image/*" class="hidden" />
+            </label>
+            <span id="setLogoFileStatus" class="text-[11px] text-slate-500"></span>
+          </div>
+          <input id="setLogoUrlInput" type="url" placeholder="หรือวาง URL รูปโลโก้ (https://...)" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:border-blue-500" />
+        </div>
+
+        <!-- Hero Banner Upload -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label class="block text-xs font-semibold text-slate-700">รูปพื้นหลังแบนเนอร์ (อัปโหลดเก็บใน Google Drive)</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>อัปโหลดรูปแบนเนอร์</span>
+              <input id="setHeroFileInput" type="file" accept="image/*" class="hidden" />
+            </label>
+            <span id="setHeroFileStatus" class="text-[11px] text-slate-500"></span>
+          </div>
+          <input id="setHeroUrlInput" type="url" placeholder="หรือวาง URL รูปแบนเนอร์ (https://...)" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white outline-none focus:border-blue-500" />
+        </div>
+
+        <div>
+          <label for="setNewPinInput" class="block text-xs font-semibold text-slate-700 mb-1">เปลี่ยนรหัสผ่านแอดมินใหม่ (อย่างน้อย 4 ตัวอักษร)</label>
+          <input id="setNewPinInput" type="password" minlength="4" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button id="cancelSettingsModalBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white">บันทึกการตั้งค่า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit System Button -->
+  <div id="systemModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 id="systemModalTitle" class="text-base font-semibold text-slate-800">เพิ่มปุ่มระบบใหม่</h3>
+        <button id="closeSystemModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="systemForm" class="p-5 overflow-y-auto space-y-4">
+        <input type="hidden" id="sysIdInput" />
+
+        <!-- Image Preview & Upload/URL -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">รูปภาพปุ่มระบบ (อัปโหลดเก็บใน Google Drive)</label>
+          <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div id="sysImagePreviewBox" class="w-full sm:w-36 h-24 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 relative">
+              <img id="sysImagePreview" src="" alt="ตัวอย่างรูปภาพ" class="w-full h-full object-cover hidden" />
+              <div id="sysIconPreview" class="flex flex-col items-center justify-center text-slate-400">
+                <i data-lucide="image" class="w-6 h-6"></i>
+                <span class="text-[11px] mt-1">ใช้ไอคอน</span>
+              </div>
+            </div>
+            <div class="flex-1 w-full space-y-2">
+              <div class="flex flex-wrap gap-2">
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer transition-colors">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                  <span>อัปโหลดรูปจากเครื่อง</span>
+                  <input id="sysImageFileInput" type="file" accept="image/*" class="hidden" />
+                </label>
+                <button id="clearSysImageBtn" type="button" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+                  <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                  <span>ใช้ไอคอนแทน</span>
+                </button>
+              </div>
+              <input
+                id="sysImageUrlInput"
+                type="url"
+                placeholder="หรือวางลิงก์รูปภาพ (https://...)"
+                class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Title & Category -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="sysTitleInput" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อระบบ <span class="text-rose-500">*</span></label>
+            <input id="sysTitleInput" type="text" required placeholder="เช่น ระบบวัดและประเมินผล" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+          </div>
+          <div>
+            <label for="sysCategorySelect" class="block text-xs font-semibold text-slate-700 mb-1">หมวดหมู่ <span class="text-rose-500">*</span></label>
+            <select id="sysCategorySelect" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none bg-white"></select>
+          </div>
+        </div>
+
+        <!-- System URL -->
+        <div>
+          <label for="sysUrlInput" class="block text-xs font-semibold text-slate-700 mb-1">ลิงก์ของระบบ (URL)</label>
+          <input id="sysUrlInput" type="url" placeholder="https://script.google.com/... หรือ https://..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+          <p class="text-[11px] text-slate-500 mt-1">ใส่ลิงก์ที่ต้องการให้เปิดเมื่อกดปุ่มนี้ (เว้นว่างไว้ได้หากยังไม่พร้อม)</p>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="sysDescInput" class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายสั้นๆ</label>
+          <textarea id="sysDescInput" rows="2" placeholder="รายละเอียดสั้นๆ เกี่ยวกับระบบนี้..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none"></textarea>
+        </div>
+
+        <!-- Icon & Color -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="sysIconSelect" class="block text-xs font-semibold text-slate-700 mb-1">ไอคอนสำรอง</label>
+            <select id="sysIconSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+              <option value="app-window">หน้าต่างแอป (App)</option>
+              <option value="clipboard-check">ประเมินผล / เช็กชื่อ</option>
+              <option value="file-text">เอกสาร / หลักสูตร</option>
+              <option value="calendar-days">ตารางสอน / ปฏิทิน</option>
+              <option value="award">เกียรติบัตร / รางวัล</option>
+              <option value="send">ส่งงานออนไลน์</option>
+              <option value="user-check">บุคลากร / การลา</option>
+              <option value="database">ฐานข้อมูล / Q-Info</option>
+              <option value="shield-check">สถานศึกษาสีขาว</option>
+              <option value="graduation-cap">วิชาการ / นักเรียน</option>
+              <option value="globe">เว็บไซต์ภายนอก</option>
+              <option value="folder-kanban">ระบบจัดการงาน</option>
+            </select>
+          </div>
+          <div>
+            <label for="sysColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">โทนสีการ์ด</label>
+            <select id="sysColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+              <option value="blue">น้ำเงิน (Royal Blue)</option>
+              <option value="indigo">คราม (Indigo)</option>
+              <option value="emerald">เขียวมรกต (Emerald)</option>
+              <option value="amber">ทองอำพัน (Amber)</option>
+              <option value="rose">แดงกุหลาบ (Rose)</option>
+              <option value="violet">ม่วง (Violet)</option>
+              <option value="cyan">ฟ้า (Cyan)</option>
+              <option value="slate">เทาเข้ม (Slate)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button id="cancelSystemModalBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Category -->
+  <div id="categoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 id="categoryModalTitle" class="text-base font-semibold text-slate-800">เพิ่มหมวดหมู่ใหม่</h3>
+        <button id="closeCategoryModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="categoryForm" class="p-5 space-y-4">
+        <input type="hidden" id="catIdInput" />
+        <div>
+          <label for="catNameInput" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อหมวดหมู่ <span class="text-rose-500">*</span></label>
+          <input id="catNameInput" type="text" required placeholder="เช่น ฝ่ายวิชาการ, งานทะเบียน" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+        </div>
+        <div>
+          <label for="catDescInput" class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายหมวดหมู่</label>
+          <input id="catDescInput" type="text" placeholder="คำอธิบายสั้นๆ ที่แสดงบนแบนเนอร์" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="catIconSelect" class="block text-xs font-semibold text-slate-700 mb-1">ไอคอนหมวดหมู่</label>
+            <select id="catIconSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+              <option value="book-open">วิชาการ (Book)</option>
+              <option value="briefcase">บริหารทั่วไป (Briefcase)</option>
+              <option value="users">กิจการนักเรียน (Users)</option>
+              <option value="landmark">หน่วยงานกลาง (Landmark)</option>
+              <option value="wallet">งบประมาณ (Wallet)</option>
+              <option value="cpu">เทคโนโลยี / AI (CPU)</option>
+              <option value="folder">แฟ้มงาน (Folder)</option>
+              <option value="star">โครงการพิเศษ (Star)</option>
+            </select>
+          </div>
+          <div>
+            <label for="catColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">สีประจำหมวด</label>
+            <select id="catColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+              <option value="blue">น้ำเงิน</option>
+              <option value="emerald">เขียว</option>
+              <option value="amber">ทอง</option>
+              <option value="violet">ม่วง</option>
+              <option value="rose">แดง</option>
+              <option value="cyan">ฟ้า</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button id="cancelCategoryModalBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors">บันทึกหมวดหมู่</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Delete -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 id="confirmTitle" class="text-base font-semibold text-slate-800">ยืนยันการดำเนินการ</h3>
+          <p id="confirmMessage" class="text-sm text-slate-600 mt-1">คุณต้องการดำเนินการนี้ใช่หรือไม่?</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button id="confirmCancelBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+        <button id="confirmOkBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white transition-colors">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    const COLOR_MAP = {
+      blue: { bg: 'from-blue-600 to-blue-700' },
+      indigo: { bg: 'from-indigo-600 to-indigo-700' },
+      emerald: { bg: 'from-emerald-600 to-teal-700' },
+      amber: { bg: 'from-amber-500 to-orange-600' },
+      rose: { bg: 'from-rose-600 to-pink-700' },
+      violet: { bg: 'from-violet-600 to-purple-700' },
+      cyan: { bg: 'from-cyan-600 to-sky-700' },
+      slate: { bg: 'from-slate-700 to-slate-800' }
+    };
+
+    const EMPTY_DATA = {
+      settings: {
+        siteName: 'ชื่อหน่วยงาน / โรงเรียนของคุณ',
+        siteSubtitle: 'ศูนย์รวมระบบสารสนเทศ',
+        heroBadge: 'พอร์ทัลรวมระบบสารสนเทศ',
+        heroTitle: 'ระบบทั้งหมด',
+        heroDesc: 'รวมลิงก์ระบบงานและบริการออนไลน์ไว้ในที่เดียว',
+        footerText: 'ศูนย์รวมระบบสารสนเทศภายในองค์กร',
+        logoUrl: '',
+        heroImageUrl: ''
+      },
+      categories: [],
+      systems: []
+    };
+
+    let state = {
+      data: JSON.parse(JSON.stringify(EMPTY_DATA)),
+      activeCategoryId: 'all',
+      searchQuery: '',
+      editMode: false,
+      adminPin: '',
+      pendingSysImageBase64: '',
+      pendingSysClearImage: false,
+      pendingLogoBase64: '',
+      pendingHeroBase64: ''
+    };
+
+    let confirmCallback = null;
+    let pendingPinCallback = null;
+
+    // ==================== GAS Backend Bridge (+ Local Preview Mock) ====================
+
+    const isGasEnv = typeof google !== 'undefined' && google.script && google.script.run;
+
+    function callBackend(fnName, ...args) {
+      if (isGasEnv) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler((err) => reject(new Error(err && err.message ? err.message : String(err))))
+            [fnName](...args);
+        });
+      }
+      return mockBackendCall(fnName, ...args);
+    }
+
+    // Local preview mock for testing UI outside Apps Script
+    function mockBackendCall(fnName, ...args) {
+      const MOCK_KEY = 'portal_gas_preview_mock_v1';
+      const loadMock = () => {
+        try {
+          const raw = localStorage.getItem(MOCK_KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return { ...JSON.parse(JSON.stringify(EMPTY_DATA)), adminPin: '1234' };
+      };
+      const saveMock = (db) => {
+        localStorage.setItem(MOCK_KEY, JSON.stringify(db));
+        return { settings: db.settings, categories: db.categories, systems: db.systems };
+      };
+
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const db = loadMock();
+          const checkPin = (pin) => {
+            if (String(pin || '').trim() !== String(db.adminPin || '1234')) {
+              throw new Error('รหัสผ่านแอดมินไม่ถูกต้อง');
+            }
+          };
+          try {
+            if (fnName === 'getPortalData') {
+              resolve({ settings: db.settings, categories: db.categories, systems: db.systems });
+            } else if (fnName === 'verifyAdminPin') {
+              checkPin(args[0]);
+              resolve({ ok: true });
+            } else if (fnName === 'saveSettings') {
+              checkPin(args[0]);
+              const p = args[1] || {};
+              ['siteName', 'siteSubtitle', 'heroBadge', 'heroTitle', 'heroDesc', 'footerText'].forEach((k) => {
+                if (typeof p[k] === 'string') db.settings[k] = p[k].trim();
+              });
+              if (p.logoBase64) db.settings.logoUrl = p.logoBase64;
+              else if (typeof p.logoUrl === 'string') db.settings.logoUrl = p.logoUrl.trim();
+              if (p.heroImageBase64) db.settings.heroImageUrl = p.heroImageBase64;
+              else if (typeof p.heroImageUrl === 'string') db.settings.heroImageUrl = p.heroImageUrl.trim();
+              if (p.newAdminPin && p.newAdminPin.length >= 4) db.adminPin = p.newAdminPin;
+              resolve(saveMock(db));
+            } else if (fnName === 'saveCategory') {
+              checkPin(args[0]);
+              const p = args[1];
+              const id = p.id || 'cat-' + Date.now();
+              const item = { id, name: p.name, desc: p.desc || '', icon: p.icon || 'folder', color: p.color || 'blue' };
+              const idx = db.categories.findIndex((c) => c.id === id);
+              if (idx >= 0) db.categories[idx] = item;
+              else db.categories.push(item);
+              resolve(saveMock(db));
+            } else if (fnName === 'deleteCategory') {
+              checkPin(args[0]);
+              db.categories = db.categories.filter((c) => c.id !== args[1]);
+              db.systems = db.systems.filter((s) => s.categoryId !== args[1]);
+              resolve(saveMock(db));
+            } else if (fnName === 'saveSystem') {
+              checkPin(args[0]);
+              const p = args[1];
+              const id = p.id || 'sys-' + Date.now();
+              const idx = db.systems.findIndex((s) => s.id === id);
+              let image = idx >= 0 ? db.systems[idx].image : '';
+              if (p.clearImage) image = '';
+              else if (p.imageBase64) image = p.imageBase64;
+              else if (typeof p.imageUrl === 'string') image = p.imageUrl;
+              const item = { id, categoryId: p.categoryId, title: p.title, desc: p.desc || '', url: p.url || '', image, icon: p.icon || 'app-window', color: p.color || 'blue' };
+              if (idx >= 0) db.systems[idx] = item;
+              else db.systems.push(item);
+              resolve(saveMock(db));
+            } else if (fnName === 'deleteSystem') {
+              checkPin(args[0]);
+              db.systems = db.systems.filter((s) => s.id !== args[1]);
+              resolve(saveMock(db));
+            } else if (fnName === 'importPortalJson') {
+              checkPin(args[0]);
+              db.categories = args[1].categories || [];
+              db.systems = args[1].systems || [];
+              resolve(saveMock(db));
+            }
+          } catch (err) {
+            reject(err);
+          }
+        }, 120);
+      });
+    }
+
+    // ==================== UI Utilities ====================
+
+    function setLoading(show, text = 'กำลังดำเนินการ...') {
+      const overlay = document.getElementById('loadingOverlay');
+      document.getElementById('loadingText').textContent = text;
+      if (show) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+      } else {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colors = type === 'error'
+        ? 'bg-rose-600 text-white'
+        : type === 'info'
+          ? 'bg-slate-800 text-white'
+          : 'bg-emerald-600 text-white';
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${colors}`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function openConfirmModal(title, message, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      confirmCallback = onConfirm;
+      openModal('confirmModal');
+    }
+
+    function toggleSidebar(open) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (open) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    // ==================== Render Functions ====================
+
+    function renderBrandAndSettings() {
+      const s = state.data.settings || EMPTY_DATA.settings;
+      document.title = `${s.siteSubtitle || 'ศูนย์รวมระบบสารสนเทศ'} | ${s.siteName || ''}`;
+      document.getElementById('sidebarSiteName').textContent = s.siteName || EMPTY_DATA.settings.siteName;
+      document.getElementById('sidebarSiteSubtitle').textContent = s.siteSubtitle || EMPTY_DATA.settings.siteSubtitle;
+      document.getElementById('heroBadgeText').textContent = s.heroBadge || EMPTY_DATA.settings.heroBadge;
+      document.getElementById('footerTextEl').textContent = s.footerText || EMPTY_DATA.settings.footerText;
+
+      const logoImg = document.getElementById('sidebarLogoImg');
+      const logoFallback = document.getElementById('sidebarLogoFallback');
+      if (s.logoUrl) {
+        logoImg.src = s.logoUrl;
+        logoImg.classList.remove('hidden');
+        logoFallback.classList.add('hidden');
+      } else {
+        logoImg.src = '';
+        logoImg.classList.add('hidden');
+        logoFallback.classList.remove('hidden');
+      }
+
+      const heroImg = document.getElementById('heroBannerImg');
+      if (s.heroImageUrl) {
+        heroImg.src = s.heroImageUrl;
+        heroImg.classList.remove('hidden');
+      } else {
+        heroImg.src = '';
+        heroImg.classList.add('hidden');
+      }
+    }
+
+    function renderSidebar() {
+      const allTab = document.getElementById('allSystemsTab');
+      document.getElementById('allCountBadge').textContent = state.data.systems.length;
+
+      if (state.activeCategoryId === 'all') {
+        allTab.className = 'w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white shadow-sm transition-all';
+      } else {
+        allTab.className = 'w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all';
+      }
+
+      // Edit-only sidebar buttons
+      document.getElementById('addCategoryBtn').classList.toggle('hidden', !state.editMode);
+      document.getElementById('openSettingsBtn').classList.toggle('hidden', !state.editMode);
+      document.getElementById('importJsonBtn').classList.toggle('hidden', !state.editMode);
+
+      const list = document.getElementById('categoryList');
+      list.innerHTML = '';
+
+      state.data.categories.forEach((cat) => {
+        const count = state.data.systems.filter((s) => s.categoryId === cat.id).length;
+        const isActive = state.activeCategoryId === cat.id;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `group flex items-center gap-1 rounded-xl transition-all ${
+          isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-800/90 hover:text-white'
+        }`;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'flex-1 min-w-0 flex items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-left';
+        btn.innerHTML = `
+          <span class="flex items-center gap-2.5 min-w-0">
+            <span class="w-7 h-7 rounded-lg ${isActive ? 'bg-white/20' : 'bg-slate-800'} flex items-center justify-center shrink-0">
+              <i data-lucide="${escapeHtml(cat.icon || 'folder')}" class="w-4 h-4"></i>
+            </span>
+            <span class="truncate">${escapeHtml(cat.name)}</span>
+          </span>
+          <span class="text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}">${count}</span>
+        `;
+        btn.addEventListener('click', () => {
+          state.activeCategoryId = cat.id;
+          renderAll();
+          toggleSidebar(false);
+        });
+
+        wrapper.appendChild(btn);
+
+        if (state.editMode) {
+          const actions = document.createElement('div');
+          actions.className = 'flex items-center pr-1.5 gap-0.5 shrink-0';
+
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'p-1.5 rounded-lg hover:bg-white/15 text-slate-300 hover:text-white';
+          editBtn.title = 'แก้ไขหมวดหมู่';
+          editBtn.innerHTML = '<i data-lucide="pencil" class="w-3.5 h-3.5"></i>';
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openCategoryModal(cat);
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'p-1.5 rounded-lg hover:bg-rose-500/30 text-slate-300 hover:text-rose-200';
+          delBtn.title = 'ลบหมวดหมู่';
+          delBtn.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>';
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openConfirmModal(
+              'ลบหมวดหมู่',
+              `ต้องการลบหมวดหมู่ "${cat.name}" และระบบทั้งหมดภายในหมวดนี้ (${count} ระบบ) ออกจาก Google Sheets ใช่หรือไม่?`,
+              async () => {
+                setLoading(true, 'กำลังลบหมวดหมู่...');
+                try {
+                  const data = await callBackend('deleteCategory', state.adminPin, cat.id);
+                  state.data = data;
+                  if (state.activeCategoryId === cat.id) state.activeCategoryId = 'all';
+                  renderAll();
+                  showToast('ลบหมวดหมู่เรียบร้อยแล้ว');
+                } catch (err) {
+                  showToast(err.message, 'error');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            );
+          });
+
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+          wrapper.appendChild(actions);
+        }
+
+        list.appendChild(wrapper);
+      });
+    }
+
+    function renderHeaderAndHero(filteredCount) {
+      const editBtn = document.getElementById('toggleEditModeBtn');
+      const editLabel = document.getElementById('editModeLabel');
+      const editIcon = document.getElementById('editModeIcon');
+      const editBanner = document.getElementById('editModeBanner');
+      const addSystemBtn = document.getElementById('addSystemBtn');
+
+      if (state.editMode) {
+        editBtn.className = 'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all';
+        editLabel.textContent = 'เสร็จสิ้นการแก้ไข';
+        editIcon.setAttribute('data-lucide', 'unlock');
+        editBanner.classList.remove('hidden');
+        addSystemBtn.classList.remove('hidden');
+      } else {
+        editBtn.className = 'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition-all';
+        editLabel.textContent = 'โหมดแก้ไข';
+        editIcon.setAttribute('data-lucide', 'lock');
+        editBanner.classList.add('hidden');
+        addSystemBtn.classList.add('hidden');
+      }
+
+      const s = state.data.settings || EMPTY_DATA.settings;
+      const titleEl = document.getElementById('activeCategoryTitle');
+      const descEl = document.getElementById('activeCategoryDesc');
+      if (state.activeCategoryId === 'all') {
+        titleEl.textContent = s.heroTitle || 'ระบบทั้งหมด';
+        descEl.textContent = s.heroDesc || 'รวมลิงก์ระบบงานและบริการออนไลน์ไว้ในที่เดียว';
+      } else {
+        const cat = state.data.categories.find((c) => c.id === state.activeCategoryId);
+        if (cat) {
+          titleEl.textContent = cat.name;
+          descEl.textContent = cat.desc || 'คลิกปุ่มระบบด้านล่างเพื่อเข้าใช้งาน';
+        }
+      }
+
+      document.getElementById('visibleCount').textContent = filteredCount;
+    }
+
+    function getCategoryName(catId) {
+      const cat = state.data.categories.find((c) => c.id === catId);
+      return cat ? cat.name : 'ไม่ระบุหมวดหมู่';
+    }
+
+    function renderGrid() {
+      const query = state.searchQuery.trim().toLowerCase();
+      const filtered = state.data.systems.filter((sys) => {
+        const matchCat = state.activeCategoryId === 'all' || sys.categoryId === state.activeCategoryId;
+        if (!matchCat) return false;
+        if (!query) return true;
+        const catName = getCategoryName(sys.categoryId).toLowerCase();
+        return (
+          (sys.title || '').toLowerCase().includes(query) ||
+          (sys.desc || '').toLowerCase().includes(query) ||
+          (sys.url || '').toLowerCase().includes(query) ||
+          catName.includes(query)
+        );
+      });
+
+      renderHeaderAndHero(filtered.length);
+
+      const grid = document.getElementById('systemsGrid');
+      const empty = document.getElementById('emptyState');
+      grid.innerHTML = '';
+
+      if (filtered.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      filtered.forEach((sys) => {
+        const colorStyle = COLOR_MAP[sys.color] || COLOR_MAP.blue;
+        const hasUrl = Boolean(sys.url && sys.url.trim());
+        const hasImage = Boolean(sys.image && sys.image.trim());
+
+        const item = document.createElement('div');
+        item.className = 'group relative flex flex-col items-center text-center';
+
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'relative w-20 h-20 sm:w-24 sm:h-24';
+
+        const appBtn = document.createElement('button');
+        appBtn.type = 'button';
+        appBtn.title = sys.desc ? `${sys.title} — ${sys.desc}` : sys.title;
+        appBtn.className = `w-full h-full rounded-[22px] sm:rounded-[26px] overflow-hidden shadow-md group-hover:shadow-xl group-hover:-translate-y-1 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/30 border ${
+          state.editMode ? 'border-blue-400 ring-2 ring-blue-400/40' : 'border-white/70'
+        }`;
+
+        if (hasImage) {
+          appBtn.innerHTML = `<img src="${escapeHtml(sys.image)}" alt="${escapeHtml(sys.title)}" class="w-full h-full object-cover" />`;
+        } else {
+          appBtn.innerHTML = `
+            <div class="w-full h-full bg-gradient-to-br ${colorStyle.bg} flex items-center justify-center relative">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-white/20 pointer-events-none"></div>
+              <i data-lucide="${escapeHtml(sys.icon || 'app-window')}" class="w-9 h-9 sm:w-10 sm:h-10 text-white drop-shadow-xs relative z-10"></i>
+            </div>
+          `;
+        }
+        appBtn.addEventListener('click', () => handleSystemClick(sys));
+        iconWrap.appendChild(appBtn);
+
+        if (!hasUrl && !state.editMode) {
+          const unlinkedBadge = document.createElement('span');
+          unlinkedBadge.className = 'absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-400 text-slate-900 border-2 border-slate-50 shadow-sm flex items-center justify-center pointer-events-none';
+          unlinkedBadge.title = 'ยังไม่ได้ใส่ลิงก์';
+          unlinkedBadge.innerHTML = '<i data-lucide="link-2-off" class="w-3 h-3"></i>';
+          iconWrap.appendChild(unlinkedBadge);
+        }
+
+        if (state.editMode) {
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'absolute -top-2 -left-2 w-7 h-7 rounded-full bg-white text-blue-600 border border-slate-200 shadow-md hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all z-10';
+          editBtn.title = 'แก้ไขปุ่มระบบ';
+          editBtn.innerHTML = '<i data-lucide="pencil" class="w-3.5 h-3.5"></i>';
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openSystemModal(sys);
+          });
+          iconWrap.appendChild(editBtn);
+
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'absolute -top-2 -right-2 w-7 h-7 rounded-full bg-rose-500 text-white border-2 border-white shadow-md hover:bg-rose-600 flex items-center justify-center transition-transform hover:scale-110 z-10';
+          delBtn.title = 'ลบปุ่มระบบ';
+          delBtn.innerHTML = '<i data-lucide="x" class="w-3.5 h-3.5"></i>';
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openConfirmModal(
+              'ลบปุ่มระบบ',
+              `ต้องการลบ "${sys.title}" ออกจาก Google Sheets ใช่หรือไม่?`,
+              async () => {
+                setLoading(true, 'กำลังลบปุ่มระบบ...');
+                try {
+                  state.data = await callBackend('deleteSystem', state.adminPin, sys.id);
+                  renderAll();
+                  showToast('ลบปุ่มระบบเรียบร้อยแล้ว');
+                } catch (err) {
+                  showToast(err.message, 'error');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            );
+          });
+          iconWrap.appendChild(delBtn);
+        }
+
+        const labelBtn = document.createElement('button');
+        labelBtn.type = 'button';
+        labelBtn.className = 'mt-2.5 text-xs sm:text-[13px] font-medium text-slate-700 group-hover:text-blue-700 line-clamp-2 leading-snug max-w-[104px] sm:max-w-[120px] focus:outline-none';
+        labelBtn.textContent = sys.title;
+        labelBtn.addEventListener('click', () => handleSystemClick(sys));
+
+        item.appendChild(iconWrap);
+        item.appendChild(labelBtn);
+        grid.appendChild(item);
+      });
+    }
+
+    function handleSystemClick(sys) {
+      if (state.editMode) {
+        openSystemModal(sys);
+        return;
+      }
+      if (sys.url && sys.url.trim()) {
+        window.open(sys.url.trim(), '_blank', 'noopener,noreferrer');
+      } else {
+        showToast('ระบบนี้ยังไม่ได้ตั้งค่าลิงก์ (ติดต่อผู้ดูแลระบบ)', 'info');
+      }
+    }
+
+    function renderAll() {
+      renderBrandAndSettings();
+      renderSidebar();
+      renderGrid();
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+
+    // ==================== Modals & Helpers ====================
+
+    function ensureEditAuth(callback) {
+      if (state.adminPin) {
+        callback();
+        return;
+      }
+      pendingPinCallback = callback;
+      document.getElementById('adminPinInput').value = '';
+      openModal('pinModal');
+      setTimeout(() => document.getElementById('adminPinInput').focus(), 50);
+    }
+
+    function compressImageFile(file, maxWidth = 800) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, maxWidth / img.width);
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function updateSysPreview(imageSrc) {
+      const imgEl = document.getElementById('sysImagePreview');
+      const iconEl = document.getElementById('sysIconPreview');
+      if (imageSrc && imageSrc.trim()) {
+        imgEl.src = imageSrc.trim();
+        imgEl.classList.remove('hidden');
+        iconEl.classList.add('hidden');
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        iconEl.classList.remove('hidden');
+      }
+    }
+
+    function openSystemModal(sys = null) {
+      const catSelect = document.getElementById('sysCategorySelect');
+      catSelect.innerHTML = '';
+      state.data.categories.forEach((cat) => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.name;
+        catSelect.appendChild(opt);
+      });
+
+      if (state.data.categories.length === 0) {
+        showToast('กรุณาสร้างหมวดหมู่ด้านข้างอย่างน้อย 1 หมวดหมู่ก่อน', 'info');
+        openCategoryModal();
+        return;
+      }
+
+      document.getElementById('sysImageFileInput').value = '';
+      state.pendingSysImageBase64 = '';
+      state.pendingSysClearImage = false;
+
+      if (sys) {
+        document.getElementById('systemModalTitle').textContent = 'แก้ไขระบบ / เปลี่ยนรูปและลิงก์';
+        document.getElementById('sysIdInput').value = sys.id;
+        document.getElementById('sysTitleInput').value = sys.title || '';
+        document.getElementById('sysCategorySelect').value = sys.categoryId || state.data.categories[0].id;
+        document.getElementById('sysUrlInput').value = sys.url || '';
+        document.getElementById('sysDescInput').value = sys.desc || '';
+        document.getElementById('sysIconSelect').value = sys.icon || 'app-window';
+        document.getElementById('sysColorSelect').value = sys.color || 'blue';
+        document.getElementById('sysImageUrlInput').value = sys.image || '';
+        updateSysPreview(sys.image || '');
+      } else {
+        document.getElementById('systemModalTitle').textContent = 'เพิ่มปุ่มระบบใหม่';
+        document.getElementById('sysIdInput').value = '';
+        document.getElementById('sysTitleInput').value = '';
+        document.getElementById('sysCategorySelect').value =
+          state.activeCategoryId !== 'all' ? state.activeCategoryId : state.data.categories[0].id;
+        document.getElementById('sysUrlInput').value = '';
+        document.getElementById('sysDescInput').value = '';
+        document.getElementById('sysIconSelect').value = 'app-window';
+        document.getElementById('sysColorSelect').value = 'blue';
+        document.getElementById('sysImageUrlInput').value = '';
+        updateSysPreview('');
+      }
+      openModal('systemModal');
+    }
+
+    function openCategoryModal(cat = null) {
+      if (cat) {
+        document.getElementById('categoryModalTitle').textContent = 'แก้ไขหมวดหมู่';
+        document.getElementById('catIdInput').value = cat.id;
+        document.getElementById('catNameInput').value = cat.name || '';
+        document.getElementById('catDescInput').value = cat.desc || '';
+        document.getElementById('catIconSelect').value = cat.icon || 'folder';
+        document.getElementById('catColorSelect').value = cat.color || 'blue';
+      } else {
+        document.getElementById('categoryModalTitle').textContent = 'เพิ่มหมวดหมู่ใหม่';
+        document.getElementById('catIdInput').value = '';
+        document.getElementById('catNameInput').value = '';
+        document.getElementById('catDescInput').value = '';
+        document.getElementById('catIconSelect').value = 'folder';
+        document.getElementById('catColorSelect').value = 'blue';
+      }
+      openModal('categoryModal');
+    }
+
+    function openSettingsModal() {
+      const s = state.data.settings || EMPTY_DATA.settings;
+      document.getElementById('setSiteNameInput').value = s.siteName || '';
+      document.getElementById('setSiteSubtitleInput').value = s.siteSubtitle || '';
+      document.getElementById('setHeroBadgeInput').value = s.heroBadge || '';
+      document.getElementById('setHeroTitleInput').value = s.heroTitle || '';
+      document.getElementById('setHeroDescInput').value = s.heroDesc || '';
+      document.getElementById('setFooterInput').value = s.footerText || '';
+      document.getElementById('setLogoUrlInput').value = s.logoUrl || '';
+      document.getElementById('setHeroUrlInput').value = s.heroImageUrl || '';
+      document.getElementById('setNewPinInput').value = '';
+      document.getElementById('setLogoFileInput').value = '';
+      document.getElementById('setHeroFileInput').value = '';
+      document.getElementById('setLogoFileStatus').textContent = '';
+      document.getElementById('setHeroFileStatus').textContent = '';
+      state.pendingLogoBase64 = '';
+      state.pendingHeroBase64 = '';
+      openModal('settingsModal');
+    }
+
+    async function loadPortalFromBackend(showSpinner = true) {
+      if (showSpinner) setLoading(true, 'กำลังโหลดข้อมูลจาก Google Sheets...');
+      try {
+        const data = await callBackend('getPortalData');
+        if (data) {
+          state.data = data;
+          renderAll();
+        }
+      } catch (err) {
+        showToast('โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error');
+      } finally {
+        if (showSpinner) setLoading(false);
+      }
+    }
+
+    function initEvents() {
+      document.getElementById('openSidebarBtn').addEventListener('click', () => toggleSidebar(true));
+      document.getElementById('closeSidebarBtn').addEventListener('click', () => toggleSidebar(false));
+      document.getElementById('sidebarBackdrop').addEventListener('click', () => toggleSidebar(false));
+
+      document.getElementById('allSystemsTab').addEventListener('click', () => {
+        state.activeCategoryId = 'all';
+        renderAll();
+        toggleSidebar(false);
+      });
+
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderGrid();
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      // Edit mode toggle with PIN check
+      document.getElementById('toggleEditModeBtn').addEventListener('click', () => {
+        if (state.editMode) {
+          state.editMode = false;
+          renderAll();
+          showToast('ออกจากโหมดแก้ไขแล้ว', 'info');
+        } else {
+          ensureEditAuth(() => {
+            state.editMode = true;
+            renderAll();
+            showToast('เปิดโหมดแก้ไขแล้ว');
+          });
+        }
+      });
+
+      document.getElementById('addSystemBtn').addEventListener('click', () => openSystemModal());
+      document.getElementById('emptyAddBtn').addEventListener('click', () => {
+        ensureEditAuth(() => {
+          state.editMode = true;
+          renderAll();
+          openSystemModal();
+        });
+      });
+      document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal());
+      document.getElementById('openSettingsBtn').addEventListener('click', () => openSettingsModal());
+
+      // PIN Modal
+      document.getElementById('closePinModalBtn').addEventListener('click', () => closeModal('pinModal'));
+      document.getElementById('cancelPinModalBtn').addEventListener('click', () => closeModal('pinModal'));
+      document.getElementById('pinForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pin = document.getElementById('adminPinInput').value.trim();
+        setLoading(true, 'กำลังตรวจสอบรหัสผ่าน...');
+        try {
+          await callBackend('verifyAdminPin', pin);
+          state.adminPin = pin;
+          closeModal('pinModal');
+          if (typeof pendingPinCallback === 'function') {
+            const cb = pendingPinCallback;
+            pendingPinCallback = null;
+            cb();
+          }
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      // Settings Modal
+      document.getElementById('closeSettingsModalBtn').addEventListener('click', () => closeModal('settingsModal'));
+      document.getElementById('cancelSettingsModalBtn').addEventListener('click', () => closeModal('settingsModal'));
+      document.getElementById('setLogoFileInput').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        state.pendingLogoBase64 = await compressImageFile(file, 400);
+        document.getElementById('setLogoFileStatus').textContent = `พร้อมอัปโหลด: ${file.name}`;
+      });
+      document.getElementById('setHeroFileInput').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        state.pendingHeroBase64 = await compressImageFile(file, 1280);
+        document.getElementById('setHeroFileStatus').textContent = `พร้อมอัปโหลด: ${file.name}`;
+      });
+      document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPin = document.getElementById('setNewPinInput').value.trim();
+        const payload = {
+          siteName: document.getElementById('setSiteNameInput').value.trim(),
+          siteSubtitle: document.getElementById('setSiteSubtitleInput').value.trim(),
+          heroBadge: document.getElementById('setHeroBadgeInput').value.trim(),
+          heroTitle: document.getElementById('setHeroTitleInput').value.trim(),
+          heroDesc: document.getElementById('setHeroDescInput').value.trim(),
+          footerText: document.getElementById('setFooterInput').value.trim(),
+          logoUrl: document.getElementById('setLogoUrlInput').value.trim(),
+          heroImageUrl: document.getElementById('setHeroUrlInput').value.trim(),
+          logoBase64: state.pendingLogoBase64,
+          heroImageBase64: state.pendingHeroBase64,
+          newAdminPin: newPin
+        };
+        setLoading(true, 'กำลังบันทึกการตั้งค่าและอัปโหลดรูปภาพ...');
+        try {
+          state.data = await callBackend('saveSettings', state.adminPin, payload);
+          if (newPin && newPin.length >= 4) state.adminPin = newPin;
+          closeModal('settingsModal');
+          renderAll();
+          showToast('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      // System Modal
+      document.getElementById('closeSystemModalBtn').addEventListener('click', () => closeModal('systemModal'));
+      document.getElementById('cancelSystemModalBtn').addEventListener('click', () => closeModal('systemModal'));
+      document.getElementById('sysImageFileInput').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          const dataUrl = await compressImageFile(file, 720);
+          state.pendingSysImageBase64 = dataUrl;
+          state.pendingSysClearImage = false;
+          document.getElementById('sysImageUrlInput').value = '';
+          updateSysPreview(dataUrl);
+          showToast('เตรียมรูปภาพสำหรับอัปโหลดขึ้น Drive แล้ว');
+        } catch (err) {
+          showToast('ไม่สามารถอ่านไฟล์รูปภาพนี้ได้', 'error');
+        }
+      });
+      document.getElementById('sysImageUrlInput').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        state.pendingSysImageBase64 = '';
+        state.pendingSysClearImage = !val;
+        updateSysPreview(val);
+      });
+      document.getElementById('clearSysImageBtn').addEventListener('click', () => {
+        state.pendingSysImageBase64 = '';
+        state.pendingSysClearImage = true;
+        document.getElementById('sysImageUrlInput').value = '';
+        document.getElementById('sysImageFileInput').value = '';
+        updateSysPreview('');
+      });
+      document.getElementById('systemForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          id: document.getElementById('sysIdInput').value,
+          categoryId: document.getElementById('sysCategorySelect').value,
+          title: document.getElementById('sysTitleInput').value.trim(),
+          url: document.getElementById('sysUrlInput').value.trim(),
+          desc: document.getElementById('sysDescInput').value.trim(),
+          imageUrl: document.getElementById('sysImageUrlInput').value.trim(),
+          imageBase64: state.pendingSysImageBase64,
+          clearImage: state.pendingSysClearImage,
+          icon: document.getElementById('sysIconSelect').value,
+          color: document.getElementById('sysColorSelect').value
+        };
+        setLoading(true, state.pendingSysImageBase64 ? 'กำลังอัปโหลดรูปขึ้น Drive และบันทึก...' : 'กำลังบันทึกลง Google Sheets...');
+        try {
+          state.data = await callBackend('saveSystem', state.adminPin, payload);
+          closeModal('systemModal');
+          renderAll();
+          showToast(payload.id ? 'บันทึกการแก้ไขระบบแล้ว' : 'เพิ่มปุ่มระบบใหม่แล้ว');
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      // Category Modal
+      document.getElementById('closeCategoryModalBtn').addEventListener('click', () => closeModal('categoryModal'));
+      document.getElementById('cancelCategoryModalBtn').addEventListener('click', () => closeModal('categoryModal'));
+      document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('catIdInput').value;
+        const payload = {
+          id,
+          name: document.getElementById('catNameInput').value.trim(),
+          desc: document.getElementById('catDescInput').value.trim(),
+          icon: document.getElementById('catIconSelect').value,
+          color: document.getElementById('catColorSelect').value
+        };
+        setLoading(true, 'กำลังบันทึกหมวดหมู่...');
+        try {
+          state.data = await callBackend('saveCategory', state.adminPin, payload);
+          if (!id && state.data.categories.length > 0) {
+            state.activeCategoryId = state.data.categories[state.data.categories.length - 1].id;
+          }
+          closeModal('categoryModal');
+          renderAll();
+          showToast(id ? 'แก้ไขหมวดหมู่แล้ว' : 'เพิ่มหมวดหมู่ใหม่แล้ว');
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      // Confirm Modal
+      document.getElementById('confirmCancelBtn').addEventListener('click', () => {
+        confirmCallback = null;
+        closeModal('confirmModal');
+      });
+      document.getElementById('confirmOkBtn').addEventListener('click', async () => {
+        const cb = confirmCallback;
+        confirmCallback = null;
+        closeModal('confirmModal');
+        if (typeof cb === 'function') await cb();
+      });
+
+      // Export / Import / Refresh
+      document.getElementById('exportJsonBtn').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'portal-backup.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('ส่งออกไฟล์ JSON เรียบร้อยแล้ว');
+      });
+
+      document.getElementById('importJsonBtn').addEventListener('click', () => {
+        document.getElementById('importFileInput').click();
+      });
+
+      document.getElementById('importFileInput').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            setLoading(true, 'กำลังนำเข้าข้อมูลลง Google Sheets...');
+            state.data = await callBackend('importPortalJson', state.adminPin, parsed);
+            state.activeCategoryId = 'all';
+            renderAll();
+            showToast('นำเข้าข้อมูลเรียบร้อยแล้ว');
+          } catch (err) {
+            showToast('นำเข้าไม่สำเร็จ: ' + err.message, 'error');
+          } finally {
+            setLoading(false);
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      document.getElementById('refreshDataBtn').addEventListener('click', () => loadPortalFromBackend(true));
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initEvents();
+      renderAll();
+      loadPortalFromBackend(true);
+    });
+  </script>
+</body>
+</html>
