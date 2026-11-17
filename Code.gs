@@ -32,11 +32,21 @@ function doGet() {
     ? `${settings.siteSubtitle || 'ศูนย์รวมระบบสารสนเทศ'} | ${settings.siteName}`
     : 'ศูนย์รวมระบบสารสนเทศ';
 
-  return HtmlService.createTemplateFromFile('index')
+  const output = HtmlService.createTemplateFromFile('index')
     .evaluate()
     .setTitle(title)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  if (settings.logoUrl && /^https?:\/\//i.test(settings.logoUrl.trim())) {
+    try {
+      output.setFaviconUrl(settings.logoUrl.trim());
+    } catch (e) {
+      Logger.log('Cannot set favicon URL: ' + e);
+    }
+  }
+
+  return output;
 }
 
 // ==================== Public Read API ====================
@@ -305,6 +315,50 @@ function deleteSystem(pin, systemId) {
     if (target) {
       if (target.imageFileId) trashDriveFileSafe_(target.imageFileId);
       sheet.deleteRow(target._rowNumber);
+    }
+
+    return getPortalData();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function saveOrder(pin, orderedCategoryIds, orderedSystemIds) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const ss = getSpreadsheet_();
+    requireAdminPin_(pin, getSettingsMap_(ss));
+    const now = new Date().toISOString();
+
+    if (Array.isArray(orderedCategoryIds) && orderedCategoryIds.length > 0) {
+      const catSheet = ss.getSheetByName(SHEET_NAMES.CATEGORIES);
+      const catRows = readSheetObjects_(catSheet);
+      const orderMap = {};
+      orderedCategoryIds.forEach((id, idx) => {
+        orderMap[String(id)] = idx + 1;
+      });
+      catRows.forEach((r) => {
+        const nextOrder = orderMap[String(r.id)];
+        if (nextOrder !== undefined) {
+          catSheet.getRange(r._rowNumber, 6, 1, 2).setValues([[nextOrder, now]]);
+        }
+      });
+    }
+
+    if (Array.isArray(orderedSystemIds) && orderedSystemIds.length > 0) {
+      const sysSheet = ss.getSheetByName(SHEET_NAMES.SYSTEMS);
+      const sysRows = readSheetObjects_(sysSheet);
+      const orderMap = {};
+      orderedSystemIds.forEach((id, idx) => {
+        orderMap[String(id)] = idx + 1;
+      });
+      sysRows.forEach((r) => {
+        const nextOrder = orderMap[String(r.id)];
+        if (nextOrder !== undefined) {
+          sysSheet.getRange(r._rowNumber, 10, 1, 2).setValues([[nextOrder, now]]);
+        }
+      });
     }
 
     return getPortalData();

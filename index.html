@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ศูนย์รวมระบบสารสนเทศ</title>
+  <link id="dynamicFavicon" rel="icon" href="" />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -19,6 +21,13 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .sortable-ghost {
+      opacity: 0.35;
+      transform: scale(0.96);
+    }
+    .sortable-chosen {
+      cursor: grabbing !important;
+    }
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -27,34 +36,34 @@
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.45);
+      background: rgba(148, 163, 184, 0.4);
       border-radius: 9999px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(100, 116, 139, 0.7);
+      background: rgba(100, 116, 139, 0.65);
     }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
   <!-- Mobile Sidebar Backdrop -->
-  <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden transition-opacity"></div>
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 hidden lg:hidden transition-opacity"></div>
 
   <!-- Global Loading Overlay -->
-  <div id="loadingOverlay" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/45 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl px-6 py-5 flex items-center gap-3.5 border border-slate-200">
-      <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+  <div id="loadingOverlay" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-xl px-6 py-4 flex items-center gap-3.5 border border-slate-200">
+      <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       <span id="loadingText" class="text-sm font-medium text-slate-700">กำลังเชื่อมต่อ Google Sheets...</span>
     </div>
   </div>
 
   <div class="min-h-screen flex">
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-72 bg-slate-900 text-slate-100 flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out shadow-xl lg:shadow-none">
+    <!-- Minimalist Sidebar -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-72 bg-slate-950 text-slate-100 flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out border-r border-slate-800/80">
       <!-- Brand -->
-      <div class="p-4 border-b border-slate-800 flex items-center gap-3">
-        <div id="sidebarLogoWrap" class="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-amber-400/60 shrink-0 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+      <div class="p-4 border-b border-slate-800/80 flex items-center gap-3">
+        <div id="sidebarLogoWrap" class="w-11 h-11 rounded-2xl overflow-hidden ring-1 ring-white/15 shrink-0 bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
           <img id="sidebarLogoImg" src="" alt="โลโก้หน่วยงาน" class="w-full h-full object-cover hidden" />
-          <i id="sidebarLogoFallback" data-lucide="layout-grid" class="w-5 h-5 text-white"></i>
+          <i id="sidebarLogoFallback" data-lucide="cpu" class="w-5 h-5 text-white"></i>
         </div>
         <div class="min-w-0 flex-1">
           <h1 id="sidebarSiteName" class="font-semibold text-sm text-white truncate">ชื่อหน่วยงาน / โรงเรียนของคุณ</h1>
@@ -66,10 +75,10 @@
       </div>
 
       <!-- Category Navigation -->
-      <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        <div class="px-2 pb-1.5 flex items-center justify-between">
+      <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+        <div class="px-2 pb-1 flex items-center justify-between">
           <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">หมวดหมู่ระบบ</span>
-          <button id="addCategoryBtn" type="button" class="hidden inline-flex items-center gap-1 text-xs font-medium text-amber-400 hover:text-amber-300 px-2 py-1 rounded-md hover:bg-slate-800 transition-colors">
+          <button id="addCategoryBtn" type="button" class="hidden inline-flex items-center gap-1 text-xs font-medium text-blue-400 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-slate-800/80 transition-colors">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
             <span>เพิ่มหมวด</span>
           </button>
@@ -78,7 +87,7 @@
         <!-- All Systems Tab -->
         <button id="allSystemsTab" type="button" class="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
           <span class="flex items-center gap-2.5 min-w-0">
-            <span class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
+            <span class="w-7 h-7 rounded-lg bg-slate-800/90 flex items-center justify-center shrink-0">
               <i data-lucide="layout-grid" class="w-4 h-4"></i>
             </span>
             <span class="truncate">ระบบทั้งหมด</span>
@@ -86,42 +95,30 @@
           <span id="allCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
         </button>
 
-        <!-- Dynamic Category Tabs -->
+        <!-- Dynamic Category Tabs (Sortable in Edit Mode) -->
         <div id="categoryList" class="space-y-1 pt-1"></div>
       </div>
 
-      <!-- Sidebar Footer Utilities -->
-      <div class="p-3 border-t border-slate-800 space-y-2 bg-slate-900/90">
-        <button id="openSettingsBtn" type="button" class="hidden w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 transition-colors">
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-slate-800/80 space-y-2.5 bg-slate-950">
+        <button id="openSettingsBtn" type="button" class="hidden w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 transition-colors">
           <i data-lucide="settings" class="w-3.5 h-3.5"></i>
           <span>ตั้งค่าเว็บไซต์ &amp; รหัสแอดมิน</span>
         </button>
-        <div class="grid grid-cols-2 gap-1.5">
-          <button id="exportJsonBtn" type="button" class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="สำรองข้อมูลเป็นไฟล์ JSON">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span>ส่งออก JSON</span>
-          </button>
-          <button id="importJsonBtn" type="button" class="hidden flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="นำเข้าข้อมูลจากไฟล์ JSON">
-            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-            <span>นำเข้า JSON</span>
-          </button>
-          <button id="refreshDataBtn" type="button" class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors" title="โหลดข้อมูลล่าสุดจาก Google Sheets">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span>รีเฟรชข้อมูล</span>
-          </button>
+        <div class="flex items-center justify-between px-2 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800/80 text-[11px] text-slate-400">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Smart Cloud DB</span>
+          </span>
+          <span class="text-slate-500">Sheets &amp; Drive</span>
         </div>
-        <div class="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-0.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>เชื่อมต่อ Google Sheets &amp; Drive</span>
-        </div>
-        <input id="importFileInput" type="file" accept=".json,application/json" class="hidden" />
       </div>
     </aside>
 
     <!-- Main Content -->
     <div class="flex-1 min-w-0 flex flex-col">
       <!-- Top Header Bar -->
-      <header class="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3">
+      <header class="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-3">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 flex-1 min-w-[200px]">
             <button id="openSidebarBtn" type="button" class="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" aria-label="เปิดเมนู">
@@ -133,17 +130,24 @@
                 id="searchInput"
                 type="search"
                 placeholder="ค้นหาระบบ, ลิงก์, หรือคำอธิบาย..."
-                class="w-full pl-10 pr-4 py-2 text-sm bg-slate-100 border border-transparent focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl outline-none transition-all"
+                class="w-full pl-10 pr-4 py-2 text-sm bg-slate-100/90 border border-slate-200/60 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 rounded-xl outline-none transition-all"
               />
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Save Order Button (Visible when reordered in Edit Mode) -->
+            <button id="saveOrderBtn" type="button" class="hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-all">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span>บันทึกลำดับ</span>
+            </button>
+
             <!-- Edit Mode Toggle -->
             <button id="toggleEditModeBtn" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border transition-all">
               <i data-lucide="lock" class="w-4 h-4" id="editModeIcon"></i>
               <span id="editModeLabel">โหมดแก้ไข</span>
             </button>
+
             <!-- Add System Button (visible in Edit Mode) -->
             <button id="addSystemBtn" type="button" class="hidden inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors">
               <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -154,49 +158,81 @@
         </div>
       </header>
 
-      <!-- Main Body -->
-      <main class="flex-1 px-4 sm:px-6 py-5 max-w-7xl w-full mx-auto space-y-6">
-        <!-- Hero Banner -->
-        <section class="relative rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 h-40 sm:h-48">
-          <img
-            id="heroBannerImg"
-            src=""
-            alt="แบนเนอร์พอร์ทัล"
-            class="w-full h-full object-cover opacity-55 hidden"
-          />
-          <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/65 to-slate-900/25"></div>
-          <div class="absolute inset-0 p-5 sm:p-7 flex flex-col justify-between">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-              <span id="heroBadgeEl" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-400/20 text-amber-300 border border-amber-400/30 backdrop-blur-xs">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span id="heroBadgeText">พอร์ทัลรวมระบบสารสนเทศ</span>
-              </span>
-              <span id="editModeBanner" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
-                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-                <span>กำลังเปิดโหมดแก้ไข: บันทึกตรงสู่ Google Sheets &amp; Drive</span>
-              </span>
-            </div>
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-              <div class="min-w-0">
-                <h2 id="activeCategoryTitle" class="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">ระบบทั้งหมด</h2>
-                <p id="activeCategoryDesc" class="text-xs sm:text-sm text-slate-200/90 mt-0.5 line-clamp-2">รวมลิงก์ระบบงานและบริการออนไลน์ไว้ในที่เดียว</p>
-              </div>
-              <div class="flex items-center gap-2 text-xs text-slate-200 shrink-0">
-                <span class="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
-                  แสดง <strong id="visibleCount" class="text-white">0</strong> ระบบ
+      <!-- Main Body (Minimalist Bento Layout) -->
+      <main class="flex-1 px-4 sm:px-6 py-6 max-w-7xl w-full mx-auto space-y-5">
+        <!-- Bento Top Row -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- Bento Card 1: Hero Banner -->
+          <div class="lg:col-span-8 relative rounded-3xl overflow-hidden border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 min-h-[168px] sm:min-h-[188px] shadow-xs">
+            <img
+              id="heroBannerImg"
+              src=""
+              alt="แบนเนอร์พอร์ทัล"
+              class="w-full h-full object-cover opacity-50 hidden absolute inset-0"
+            />
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/65 to-transparent"></div>
+            <div class="relative z-10 h-full p-5 sm:p-7 flex flex-col justify-between gap-4">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-blue-200 border border-white/15 backdrop-blur-xs">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+                  <span id="heroBadgeText">พอร์ทัลรวมระบบสารสนเทศ</span>
                 </span>
+                <span id="editModeBanner" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/35">
+                  <i data-lucide="move" class="w-3.5 h-3.5"></i>
+                  <span>ลากวางเพื่อจัดลำดับ แล้วกด "บันทึกลำดับ"</span>
+                </span>
+              </div>
+              <div>
+                <h2 id="activeCategoryTitle" class="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">ระบบทั้งหมด</h2>
+                <p id="activeCategoryDesc" class="text-xs sm:text-sm text-slate-300 mt-1 line-clamp-2">รวมลิงก์ระบบงานและบริการออนไลน์ไว้ในที่เดียว</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento Card 2: Smart School Status & Live Clock -->
+          <div class="lg:col-span-4 rounded-3xl bg-white border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col justify-between gap-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                  <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                  <span>Smart School Portal</span>
+                </span>
+                <div id="liveClock" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-2.5 tabular-nums">--:--:--</div>
+                <div id="liveDate" class="text-xs text-slate-500 mt-0.5">กำลังโหลดวันที่...</div>
+              </div>
+              <div class="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-center text-blue-600 shrink-0">
+                <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
+              <div class="rounded-2xl bg-slate-50 px-3.5 py-2.5 border border-slate-200/60">
+                <div class="text-[11px] text-slate-500">แสดงผลขณะนี้</div>
+                <div class="text-base font-bold text-slate-800 mt-0.5"><span id="visibleCount">0</span> <span class="text-xs font-normal text-slate-500">ระบบ</span></div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 px-3.5 py-2.5 border border-slate-200/60">
+                <div class="text-[11px] text-slate-500">หมวดหมู่ทั้งหมด</div>
+                <div class="text-base font-bold text-slate-800 mt-0.5"><span id="totalCategoriesCount">0</span> <span class="text-xs font-normal text-slate-500">หมวด</span></div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Systems Grid -->
-        <section>
-          <div id="systemsGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-6 py-2"></div>
+        <!-- Bento Systems Grid Container -->
+        <section class="rounded-3xl bg-white border border-slate-200/80 p-5 sm:p-7 shadow-xs">
+          <div class="flex items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-5 rounded-full bg-blue-600"></span>
+              <h3 class="text-sm font-semibold text-slate-800">ทางลัดระบบสารสนเทศ</h3>
+            </div>
+            <span id="dragHintText" class="hidden text-xs text-slate-400">ลากไอคอนเพื่อเปลี่ยนตำแหน่งได้ทันที</span>
+          </div>
+
+          <div id="systemsGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-6"></div>
 
           <!-- Empty State -->
-          <div id="emptyState" class="hidden text-center py-14 px-6 bg-white rounded-2xl border border-dashed border-slate-300">
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+          <div id="emptyState" class="hidden text-center py-12 px-6 bg-slate-50/70 rounded-2xl border border-dashed border-slate-300">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center mb-3 shadow-xs">
               <i data-lucide="folder-open" class="w-7 h-7"></i>
             </div>
             <h3 class="text-base font-semibold text-slate-800">ยังไม่มีปุ่มระบบในหมวดหมู่นี้</h3>
@@ -210,15 +246,15 @@
       </main>
 
       <!-- Footer -->
-      <footer id="footerTextEl" class="px-6 py-4 border-t border-slate-200 bg-white text-center text-xs text-slate-500">
+      <footer id="footerTextEl" class="px-6 py-4 border-t border-slate-200/80 bg-white text-center text-xs text-slate-500">
         ศูนย์รวมระบบสารสนเทศภายในองค์กร
       </footer>
     </div>
   </div>
 
   <!-- Modal: Admin PIN -->
-  <div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+  <div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <h3 class="text-base font-semibold text-slate-800 flex items-center gap-2">
           <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
@@ -243,8 +279,8 @@
   </div>
 
   <!-- Modal: Site Settings -->
-  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <h3 class="text-base font-semibold text-slate-800">ตั้งค่าเว็บไซต์ &amp; แบรนด์</h3>
         <button id="closeSettingsModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
@@ -284,9 +320,9 @@
           <input id="setFooterInput" type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 outline-none" />
         </div>
 
-        <!-- Logo Upload -->
+        <!-- Logo Upload (Also becomes Browser Favicon) -->
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <label class="block text-xs font-semibold text-slate-700">โลโก้หน่วยงาน (อัปโหลดเก็บใน Google Drive)</label>
+          <label class="block text-xs font-semibold text-slate-700">โลโก้หน่วยงาน &amp; ไอคอนแท็บเบราว์เซอร์ (Favicon)</label>
           <div class="flex flex-wrap items-center gap-2">
             <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer">
               <i data-lucide="upload" class="w-3.5 h-3.5"></i>
@@ -326,8 +362,8 @@
   </div>
 
   <!-- Modal: Add / Edit System Button -->
-  <div id="systemModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+  <div id="systemModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <h3 id="systemModalTitle" class="text-base font-semibold text-slate-800">เพิ่มปุ่มระบบใหม่</h3>
         <button id="closeSystemModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
@@ -336,12 +372,13 @@
       </div>
       <form id="systemForm" class="p-5 overflow-y-auto space-y-4">
         <input type="hidden" id="sysIdInput" />
+        <input type="hidden" id="sysIconInput" value="app-window" />
 
         <!-- Image Preview & Upload/URL -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1.5">รูปภาพปุ่มระบบ (อัปโหลดเก็บใน Google Drive)</label>
           <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <div id="sysImagePreviewBox" class="w-full sm:w-36 h-24 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 relative">
+            <div id="sysImagePreviewBox" class="w-full sm:w-32 h-24 rounded-2xl border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 relative">
               <img id="sysImagePreview" src="" alt="ตัวอย่างรูปภาพ" class="w-full h-full object-cover hidden" />
               <div id="sysIconPreview" class="flex flex-col items-center justify-center text-slate-400">
                 <i data-lucide="image" class="w-6 h-6"></i>
@@ -386,7 +423,6 @@
         <div>
           <label for="sysUrlInput" class="block text-xs font-semibold text-slate-700 mb-1">ลิงก์ของระบบ (URL)</label>
           <input id="sysUrlInput" type="url" placeholder="https://script.google.com/... หรือ https://..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
-          <p class="text-[11px] text-slate-500 mt-1">ใส่ลิงก์ที่ต้องการให้เปิดเมื่อกดปุ่มนี้ (เว้นว่างไว้ได้หากยังไม่พร้อม)</p>
         </div>
 
         <!-- Description -->
@@ -395,38 +431,28 @@
           <textarea id="sysDescInput" rows="2" placeholder="รายละเอียดสั้นๆ เกี่ยวกับระบบนี้..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none"></textarea>
         </div>
 
-        <!-- Icon & Color -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label for="sysIconSelect" class="block text-xs font-semibold text-slate-700 mb-1">ไอคอนสำรอง</label>
-            <select id="sysIconSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
-              <option value="app-window">หน้าต่างแอป (App)</option>
-              <option value="clipboard-check">ประเมินผล / เช็กชื่อ</option>
-              <option value="file-text">เอกสาร / หลักสูตร</option>
-              <option value="calendar-days">ตารางสอน / ปฏิทิน</option>
-              <option value="award">เกียรติบัตร / รางวัล</option>
-              <option value="send">ส่งงานออนไลน์</option>
-              <option value="user-check">บุคลากร / การลา</option>
-              <option value="database">ฐานข้อมูล / Q-Info</option>
-              <option value="shield-check">สถานศึกษาสีขาว</option>
-              <option value="graduation-cap">วิชาการ / นักเรียน</option>
-              <option value="globe">เว็บไซต์ภายนอก</option>
-              <option value="folder-kanban">ระบบจัดการงาน</option>
-            </select>
+        <!-- Visual Icon Picker Grid -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-slate-700">เลือกไอคอนสำรอง (คลิกเพื่อดูตัวอย่างและเลือก)</label>
+            <span id="sysSelectedIconLabel" class="text-[11px] font-medium text-blue-600"></span>
           </div>
-          <div>
-            <label for="sysColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">โทนสีการ์ด</label>
-            <select id="sysColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
-              <option value="blue">น้ำเงิน (Royal Blue)</option>
-              <option value="indigo">คราม (Indigo)</option>
-              <option value="emerald">เขียวมรกต (Emerald)</option>
-              <option value="amber">ทองอำพัน (Amber)</option>
-              <option value="rose">แดงกุหลาบ (Rose)</option>
-              <option value="violet">ม่วง (Violet)</option>
-              <option value="cyan">ฟ้า (Cyan)</option>
-              <option value="slate">เทาเข้ม (Slate)</option>
-            </select>
-          </div>
+          <div id="sysIconPicker" class="grid grid-cols-6 sm:grid-cols-8 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 max-h-44 overflow-y-auto"></div>
+        </div>
+
+        <!-- Color -->
+        <div>
+          <label for="sysColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">โทนสีการ์ด</label>
+          <select id="sysColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+            <option value="blue">น้ำเงิน (Royal Blue)</option>
+            <option value="indigo">คราม (Indigo)</option>
+            <option value="emerald">เขียวมรกต (Emerald)</option>
+            <option value="amber">ทองอำพัน (Amber)</option>
+            <option value="rose">แดงกุหลาบ (Rose)</option>
+            <option value="violet">ม่วง (Violet)</option>
+            <option value="cyan">ฟ้า (Cyan)</option>
+            <option value="slate">เทาเข้ม (Slate)</option>
+          </select>
         </div>
 
         <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
@@ -438,16 +464,18 @@
   </div>
 
   <!-- Modal: Add / Edit Category -->
-  <div id="categoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+  <div id="categoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
         <h3 id="categoryModalTitle" class="text-base font-semibold text-slate-800">เพิ่มหมวดหมู่ใหม่</h3>
         <button id="closeCategoryModalBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <form id="categoryForm" class="p-5 space-y-4">
+      <form id="categoryForm" class="p-5 overflow-y-auto space-y-4">
         <input type="hidden" id="catIdInput" />
+        <input type="hidden" id="catIconInput" value="folder" />
+
         <div>
           <label for="catNameInput" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อหมวดหมู่ <span class="text-rose-500">*</span></label>
           <input id="catNameInput" type="text" required placeholder="เช่น ฝ่ายวิชาการ, งานทะเบียน" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
@@ -456,32 +484,28 @@
           <label for="catDescInput" class="block text-xs font-semibold text-slate-700 mb-1">คำอธิบายหมวดหมู่</label>
           <input id="catDescInput" type="text" placeholder="คำอธิบายสั้นๆ ที่แสดงบนแบนเนอร์" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none" />
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="catIconSelect" class="block text-xs font-semibold text-slate-700 mb-1">ไอคอนหมวดหมู่</label>
-            <select id="catIconSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
-              <option value="book-open">วิชาการ (Book)</option>
-              <option value="briefcase">บริหารทั่วไป (Briefcase)</option>
-              <option value="users">กิจการนักเรียน (Users)</option>
-              <option value="landmark">หน่วยงานกลาง (Landmark)</option>
-              <option value="wallet">งบประมาณ (Wallet)</option>
-              <option value="cpu">เทคโนโลยี / AI (CPU)</option>
-              <option value="folder">แฟ้มงาน (Folder)</option>
-              <option value="star">โครงการพิเศษ (Star)</option>
-            </select>
+
+        <!-- Visual Category Icon Picker -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-slate-700">เลือกไอคอนหมวดหมู่ (คลิกเพื่อดูตัวอย่าง)</label>
+            <span id="catSelectedIconLabel" class="text-[11px] font-medium text-blue-600"></span>
           </div>
-          <div>
-            <label for="catColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">สีประจำหมวด</label>
-            <select id="catColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
-              <option value="blue">น้ำเงิน</option>
-              <option value="emerald">เขียว</option>
-              <option value="amber">ทอง</option>
-              <option value="violet">ม่วง</option>
-              <option value="rose">แดง</option>
-              <option value="cyan">ฟ้า</option>
-            </select>
-          </div>
+          <div id="catIconPicker" class="grid grid-cols-6 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 max-h-44 overflow-y-auto"></div>
         </div>
+
+        <div>
+          <label for="catColorSelect" class="block text-xs font-semibold text-slate-700 mb-1">สีประจำหมวด</label>
+          <select id="catColorSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:border-blue-500">
+            <option value="blue">น้ำเงิน</option>
+            <option value="emerald">เขียว</option>
+            <option value="amber">ทอง</option>
+            <option value="violet">ม่วง</option>
+            <option value="rose">แดง</option>
+            <option value="cyan">ฟ้า</option>
+          </select>
+        </div>
+
         <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
           <button id="cancelCategoryModalBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">ยกเลิก</button>
           <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors">บันทึกหมวดหมู่</button>
@@ -491,8 +515,8 @@
   </div>
 
   <!-- Modal: Confirm Delete -->
-  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4">
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4 border border-slate-200">
       <div class="flex items-start gap-3">
         <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
           <i data-lucide="alert-triangle" class="w-5 h-5"></i>
@@ -524,6 +548,50 @@
       slate: { bg: 'from-slate-700 to-slate-800' }
     };
 
+    // Expanded Smart School Icon Library (36 curated Lucide icons)
+    const ICON_LIBRARY = [
+      { id: 'app-window', label: 'หน้าต่างแอป' },
+      { id: 'graduation-cap', label: 'วิชาการ/นักเรียน' },
+      { id: 'book-open', label: 'หลักสูตร/ตำรา' },
+      { id: 'library', label: 'ห้องสมุด' },
+      { id: 'clipboard-check', label: 'วัดผล/เช็กชื่อ' },
+      { id: 'file-text', label: 'เอกสาร/บันทึก' },
+      { id: 'calendar-days', label: 'ตารางสอน/ปฏิทิน' },
+      { id: 'award', label: 'เกียรติบัตร/รางวัล' },
+      { id: 'send', label: 'ส่งงานออนไลน์' },
+      { id: 'user-check', label: 'บุคลากร/การลา' },
+      { id: 'users', label: 'กิจการนักเรียน' },
+      { id: 'database', label: 'ฐานข้อมูล' },
+      { id: 'cpu', label: 'AI / เทคโนโลยี' },
+      { id: 'bot', label: 'แชทบอท/ผู้ช่วย AI' },
+      { id: 'sparkles', label: 'นวัตกรรมอัจฉริยะ' },
+      { id: 'bar-chart-3', label: 'สถิติ/รายงานผล' },
+      { id: 'pie-chart', label: 'แผนภูมิ/วิเคราะห์' },
+      { id: 'landmark', label: 'หน่วยงาน/สพฐ.' },
+      { id: 'briefcase', label: 'บริหารทั่วไป' },
+      { id: 'wallet', label: 'การเงิน/งบประมาณ' },
+      { id: 'folder', label: 'แฟ้มงาน' },
+      { id: 'folder-kanban', label: 'จัดการโครงการ' },
+      { id: 'shield-check', label: 'ความปลอดภัย/สีขาว' },
+      { id: 'globe', label: 'เว็บไซต์ภายนอก' },
+      { id: 'cloud', label: 'คลาวด์/Drive' },
+      { id: 'mail', label: 'อีเมลองค์กร' },
+      { id: 'message-square', label: 'สื่อสาร/แจ้งข่าว' },
+      { id: 'bell', label: 'แจ้งเตือน' },
+      { id: 'video', label: 'เรียนออนไลน์/ประชุม' },
+      { id: 'monitor', label: 'คอมพิวเตอร์/IT' },
+      { id: 'smartphone', label: 'แอปมือถือ' },
+      { id: 'qr-code', label: 'สแกน QR Code' },
+      { id: 'flask-conical', label: 'วิทยาศาสตร์/STEM' },
+      { id: 'microscope', label: 'ห้องปฏิบัติการ' },
+      { id: 'heart-pulse', label: 'พยาบาล/สุขภาพ' },
+      { id: 'trophy', label: 'กีฬา/แข่งขัน' },
+      { id: 'bus', label: 'รถรับส่ง/ทัศนศึกษา' },
+      { id: 'utensils', label: 'อาหารกลางวัน' },
+      { id: 'building-2', label: 'อาคารสถานที่' },
+      { id: 'star', label: 'โครงการพิเศษ' }
+    ];
+
     const EMPTY_DATA = {
       settings: {
         siteName: 'ชื่อหน่วยงาน / โรงเรียนของคุณ',
@@ -545,6 +613,7 @@
       searchQuery: '',
       editMode: false,
       adminPin: '',
+      hasUnsavedOrder: false,
       pendingSysImageBase64: '',
       pendingSysClearImage: false,
       pendingLogoBase64: '',
@@ -553,6 +622,8 @@
 
     let confirmCallback = null;
     let pendingPinCallback = null;
+    let catSortable = null;
+    let sysSortable = null;
 
     // ==================== GAS Backend Bridge (+ Local Preview Mock) ====================
 
@@ -570,7 +641,6 @@
       return mockBackendCall(fnName, ...args);
     }
 
-    // Local preview mock for testing UI outside Apps Script
     function mockBackendCall(fnName, ...args) {
       const MOCK_KEY = 'portal_gas_preview_mock_v1';
       const loadMock = () => {
@@ -642,10 +712,16 @@
               checkPin(args[0]);
               db.systems = db.systems.filter((s) => s.id !== args[1]);
               resolve(saveMock(db));
-            } else if (fnName === 'importPortalJson') {
+            } else if (fnName === 'saveOrder') {
               checkPin(args[0]);
-              db.categories = args[1].categories || [];
-              db.systems = args[1].systems || [];
+              const catIds = args[1] || [];
+              const sysIds = args[2] || [];
+              if (catIds.length) {
+                db.categories.sort((a, b) => catIds.indexOf(a.id) - catIds.indexOf(b.id));
+              }
+              if (sysIds.length) {
+                db.systems.sort((a, b) => sysIds.indexOf(a.id) - sysIds.indexOf(b.id));
+              }
               resolve(saveMock(db));
             }
           } catch (err) {
@@ -727,6 +803,59 @@
       }
     }
 
+    function startLiveClock() {
+      const update = () => {
+        const now = new Date();
+        document.getElementById('liveClock').textContent = now.toLocaleTimeString('th-TH', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        document.getElementById('liveDate').textContent = now.toLocaleDateString('th-TH', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    // ==================== Visual Icon Picker ====================
+
+    function renderIconPicker(containerId, hiddenInputId, labelId, selectedIcon) {
+      const container = document.getElementById(containerId);
+      const hiddenInput = document.getElementById(hiddenInputId);
+      const labelEl = document.getElementById(labelId);
+      hiddenInput.value = selectedIcon;
+
+      const found = ICON_LIBRARY.find((i) => i.id === selectedIcon);
+      labelEl.textContent = found ? found.label : selectedIcon;
+
+      container.innerHTML = '';
+      ICON_LIBRARY.forEach((item) => {
+        const isSelected = item.id === selectedIcon;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = item.label;
+        btn.className = `flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+          isSelected
+            ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-500/30 shadow-xs'
+            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400 hover:text-blue-600'
+        }`;
+        btn.innerHTML = `<i data-lucide="${escapeHtml(item.id)}" class="w-5 h-5"></i>`;
+        btn.addEventListener('click', () => {
+          renderIconPicker(containerId, hiddenInputId, labelId, item.id);
+        });
+        container.appendChild(btn);
+      });
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
+
     // ==================== Render Functions ====================
 
     function renderBrandAndSettings() {
@@ -736,6 +865,12 @@
       document.getElementById('sidebarSiteSubtitle').textContent = s.siteSubtitle || EMPTY_DATA.settings.siteSubtitle;
       document.getElementById('heroBadgeText').textContent = s.heroBadge || EMPTY_DATA.settings.heroBadge;
       document.getElementById('footerTextEl').textContent = s.footerText || EMPTY_DATA.settings.footerText;
+
+      // Update browser tab favicon from uploaded logo
+      const faviconEl = document.getElementById('dynamicFavicon');
+      if (faviconEl && s.logoUrl) {
+        faviconEl.href = s.logoUrl;
+      }
 
       const logoImg = document.getElementById('sidebarLogoImg');
       const logoFallback = document.getElementById('sidebarLogoFallback');
@@ -762,17 +897,16 @@
     function renderSidebar() {
       const allTab = document.getElementById('allSystemsTab');
       document.getElementById('allCountBadge').textContent = state.data.systems.length;
+      document.getElementById('totalCategoriesCount').textContent = state.data.categories.length;
 
       if (state.activeCategoryId === 'all') {
         allTab.className = 'w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white shadow-sm transition-all';
       } else {
-        allTab.className = 'w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all';
+        allTab.className = 'w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-900 hover:text-white transition-all';
       }
 
-      // Edit-only sidebar buttons
       document.getElementById('addCategoryBtn').classList.toggle('hidden', !state.editMode);
       document.getElementById('openSettingsBtn').classList.toggle('hidden', !state.editMode);
-      document.getElementById('importJsonBtn').classList.toggle('hidden', !state.editMode);
 
       const list = document.getElementById('categoryList');
       list.innerHTML = '';
@@ -782,16 +916,25 @@
         const isActive = state.activeCategoryId === cat.id;
 
         const wrapper = document.createElement('div');
+        wrapper.dataset.id = cat.id;
         wrapper.className = `group flex items-center gap-1 rounded-xl transition-all ${
-          isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-800/90 hover:text-white'
+          isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-900 hover:text-white'
         }`;
+
+        if (state.editMode) {
+          const handle = document.createElement('span');
+          handle.className = 'cat-drag-handle pl-2 text-slate-400 hover:text-white cursor-grab active:cursor-grabbing shrink-0';
+          handle.title = 'ลากเพื่อย้ายลำดับหมวดหมู่';
+          handle.innerHTML = '<i data-lucide="grip-vertical" class="w-4 h-4"></i>';
+          wrapper.appendChild(handle);
+        }
 
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'flex-1 min-w-0 flex items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-left';
+        btn.className = `flex-1 min-w-0 flex items-center justify-between gap-2 ${state.editMode ? 'px-1.5' : 'px-3'} py-2.5 text-sm font-medium text-left`;
         btn.innerHTML = `
           <span class="flex items-center gap-2.5 min-w-0">
-            <span class="w-7 h-7 rounded-lg ${isActive ? 'bg-white/20' : 'bg-slate-800'} flex items-center justify-center shrink-0">
+            <span class="w-7 h-7 rounded-lg ${isActive ? 'bg-white/20' : 'bg-slate-800/90'} flex items-center justify-center shrink-0">
               <i data-lucide="${escapeHtml(cat.icon || 'folder')}" class="w-4 h-4"></i>
             </span>
             <span class="truncate">${escapeHtml(cat.name)}</span>
@@ -835,6 +978,7 @@
                 try {
                   const data = await callBackend('deleteCategory', state.adminPin, cat.id);
                   state.data = data;
+                  state.hasUnsavedOrder = false;
                   if (state.activeCategoryId === cat.id) state.activeCategoryId = 'all';
                   renderAll();
                   showToast('ลบหมวดหมู่เรียบร้อยแล้ว');
@@ -854,6 +998,8 @@
 
         list.appendChild(wrapper);
       });
+
+      setupCategorySortable();
     }
 
     function renderHeaderAndHero(filteredCount) {
@@ -862,6 +1008,8 @@
       const editIcon = document.getElementById('editModeIcon');
       const editBanner = document.getElementById('editModeBanner');
       const addSystemBtn = document.getElementById('addSystemBtn');
+      const saveOrderBtn = document.getElementById('saveOrderBtn');
+      const dragHintText = document.getElementById('dragHintText');
 
       if (state.editMode) {
         editBtn.className = 'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all';
@@ -869,12 +1017,16 @@
         editIcon.setAttribute('data-lucide', 'unlock');
         editBanner.classList.remove('hidden');
         addSystemBtn.classList.remove('hidden');
+        dragHintText.classList.remove('hidden');
+        saveOrderBtn.classList.toggle('hidden', !state.hasUnsavedOrder);
       } else {
         editBtn.className = 'inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition-all';
         editLabel.textContent = 'โหมดแก้ไข';
         editIcon.setAttribute('data-lucide', 'lock');
         editBanner.classList.add('hidden');
         addSystemBtn.classList.add('hidden');
+        dragHintText.classList.add('hidden');
+        saveOrderBtn.classList.add('hidden');
       }
 
       const s = state.data.settings || EMPTY_DATA.settings;
@@ -922,6 +1074,7 @@
 
       if (filtered.length === 0) {
         empty.classList.remove('hidden');
+        setupSystemSortable();
         return;
       }
       empty.classList.add('hidden');
@@ -932,7 +1085,10 @@
         const hasImage = Boolean(sys.image && sys.image.trim());
 
         const item = document.createElement('div');
-        item.className = 'group relative flex flex-col items-center text-center';
+        item.dataset.id = sys.id;
+        item.className = `group relative flex flex-col items-center text-center ${
+          state.editMode && !query ? 'cursor-grab active:cursor-grabbing' : ''
+        }`;
 
         const iconWrap = document.createElement('div');
         iconWrap.className = 'relative w-20 h-20 sm:w-24 sm:h-24';
@@ -940,16 +1096,16 @@
         const appBtn = document.createElement('button');
         appBtn.type = 'button';
         appBtn.title = sys.desc ? `${sys.title} — ${sys.desc}` : sys.title;
-        appBtn.className = `w-full h-full rounded-[22px] sm:rounded-[26px] overflow-hidden shadow-md group-hover:shadow-xl group-hover:-translate-y-1 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/30 border ${
-          state.editMode ? 'border-blue-400 ring-2 ring-blue-400/40' : 'border-white/70'
+        appBtn.className = `w-full h-full rounded-[22px] sm:rounded-[24px] overflow-hidden shadow-sm group-hover:shadow-lg group-hover:-translate-y-1 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/25 border ${
+          state.editMode ? 'border-blue-400 ring-2 ring-blue-400/35' : 'border-slate-200/70'
         }`;
 
         if (hasImage) {
-          appBtn.innerHTML = `<img src="${escapeHtml(sys.image)}" alt="${escapeHtml(sys.title)}" class="w-full h-full object-cover" />`;
+          appBtn.innerHTML = `<img src="${escapeHtml(sys.image)}" alt="${escapeHtml(sys.title)}" class="w-full h-full object-cover pointer-events-none" />`;
         } else {
           appBtn.innerHTML = `
-            <div class="w-full h-full bg-gradient-to-br ${colorStyle.bg} flex items-center justify-center relative">
-              <div class="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-white/20 pointer-events-none"></div>
+            <div class="w-full h-full bg-gradient-to-br ${colorStyle.bg} flex items-center justify-center relative pointer-events-none">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-white/20"></div>
               <i data-lucide="${escapeHtml(sys.icon || 'app-window')}" class="w-9 h-9 sm:w-10 sm:h-10 text-white drop-shadow-xs relative z-10"></i>
             </div>
           `;
@@ -959,7 +1115,7 @@
 
         if (!hasUrl && !state.editMode) {
           const unlinkedBadge = document.createElement('span');
-          unlinkedBadge.className = 'absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-400 text-slate-900 border-2 border-slate-50 shadow-sm flex items-center justify-center pointer-events-none';
+          unlinkedBadge.className = 'absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-400 text-slate-900 border-2 border-white shadow-sm flex items-center justify-center pointer-events-none';
           unlinkedBadge.title = 'ยังไม่ได้ใส่ลิงก์';
           unlinkedBadge.innerHTML = '<i data-lucide="link-2-off" class="w-3 h-3"></i>';
           iconWrap.appendChild(unlinkedBadge);
@@ -991,6 +1147,7 @@
                 setLoading(true, 'กำลังลบปุ่มระบบ...');
                 try {
                   state.data = await callBackend('deleteSystem', state.adminPin, sys.id);
+                  state.hasUnsavedOrder = false;
                   renderAll();
                   showToast('ลบปุ่มระบบเรียบร้อยแล้ว');
                 } catch (err) {
@@ -1013,6 +1170,69 @@
         item.appendChild(iconWrap);
         item.appendChild(labelBtn);
         grid.appendChild(item);
+      });
+
+      setupSystemSortable();
+    }
+
+    // ==================== Drag & Drop (SortableJS) ====================
+
+    function setupCategorySortable() {
+      if (catSortable) {
+        catSortable.destroy();
+        catSortable = null;
+      }
+      if (!state.editMode || typeof Sortable === 'undefined') return;
+
+      const el = document.getElementById('categoryList');
+      catSortable = Sortable.create(el, {
+        handle: '.cat-drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: () => {
+          const orderedIds = Array.from(el.children).map((node) => node.dataset.id).filter(Boolean);
+          state.data.categories.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+          state.hasUnsavedOrder = true;
+          renderHeaderAndHero(document.getElementById('systemsGrid').children.length);
+          if (window.lucide) window.lucide.createIcons();
+        }
+      });
+    }
+
+    function setupSystemSortable() {
+      if (sysSortable) {
+        sysSortable.destroy();
+        sysSortable = null;
+      }
+      if (!state.editMode || state.searchQuery.trim() || typeof Sortable === 'undefined') return;
+
+      const grid = document.getElementById('systemsGrid');
+      if (grid.children.length === 0) return;
+
+      sysSortable = Sortable.create(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        delay: 80,
+        delayOnTouchOnly: true,
+        onEnd: () => {
+          const visibleIds = Array.from(grid.children).map((node) => node.dataset.id).filter(Boolean);
+          if (state.activeCategoryId === 'all') {
+            state.data.systems.sort((a, b) => visibleIds.indexOf(a.id) - visibleIds.indexOf(b.id));
+          } else {
+            // Reorder only items in the active category while preserving slots in state.data.systems
+            const visibleMap = new Map(visibleIds.map((id, idx) => [id, idx]));
+            const catItems = state.data.systems
+              .filter((s) => visibleMap.has(s.id))
+              .sort((a, b) => visibleMap.get(a.id) - visibleMap.get(b.id));
+            let ptr = 0;
+            state.data.systems = state.data.systems.map((s) => (visibleMap.has(s.id) ? catItems[ptr++] : s));
+          }
+          state.hasUnsavedOrder = true;
+          renderHeaderAndHero(grid.children.length);
+          if (window.lucide) window.lucide.createIcons();
+        }
       });
     }
 
@@ -1115,10 +1335,10 @@
         document.getElementById('sysCategorySelect').value = sys.categoryId || state.data.categories[0].id;
         document.getElementById('sysUrlInput').value = sys.url || '';
         document.getElementById('sysDescInput').value = sys.desc || '';
-        document.getElementById('sysIconSelect').value = sys.icon || 'app-window';
         document.getElementById('sysColorSelect').value = sys.color || 'blue';
         document.getElementById('sysImageUrlInput').value = sys.image || '';
         updateSysPreview(sys.image || '');
+        renderIconPicker('sysIconPicker', 'sysIconInput', 'sysSelectedIconLabel', sys.icon || 'app-window');
       } else {
         document.getElementById('systemModalTitle').textContent = 'เพิ่มปุ่มระบบใหม่';
         document.getElementById('sysIdInput').value = '';
@@ -1127,10 +1347,10 @@
           state.activeCategoryId !== 'all' ? state.activeCategoryId : state.data.categories[0].id;
         document.getElementById('sysUrlInput').value = '';
         document.getElementById('sysDescInput').value = '';
-        document.getElementById('sysIconSelect').value = 'app-window';
         document.getElementById('sysColorSelect').value = 'blue';
         document.getElementById('sysImageUrlInput').value = '';
         updateSysPreview('');
+        renderIconPicker('sysIconPicker', 'sysIconInput', 'sysSelectedIconLabel', 'app-window');
       }
       openModal('systemModal');
     }
@@ -1141,15 +1361,15 @@
         document.getElementById('catIdInput').value = cat.id;
         document.getElementById('catNameInput').value = cat.name || '';
         document.getElementById('catDescInput').value = cat.desc || '';
-        document.getElementById('catIconSelect').value = cat.icon || 'folder';
         document.getElementById('catColorSelect').value = cat.color || 'blue';
+        renderIconPicker('catIconPicker', 'catIconInput', 'catSelectedIconLabel', cat.icon || 'folder');
       } else {
         document.getElementById('categoryModalTitle').textContent = 'เพิ่มหมวดหมู่ใหม่';
         document.getElementById('catIdInput').value = '';
         document.getElementById('catNameInput').value = '';
         document.getElementById('catDescInput').value = '';
-        document.getElementById('catIconSelect').value = 'folder';
         document.getElementById('catColorSelect').value = 'blue';
+        renderIconPicker('catIconPicker', 'catIconInput', 'catSelectedIconLabel', 'folder');
       }
       openModal('categoryModal');
     }
@@ -1180,6 +1400,7 @@
         const data = await callBackend('getPortalData');
         if (data) {
           state.data = data;
+          state.hasUnsavedOrder = false;
           renderAll();
         }
       } catch (err) {
@@ -1206,7 +1427,6 @@
         if (window.lucide) window.lucide.createIcons();
       });
 
-      // Edit mode toggle with PIN check
       document.getElementById('toggleEditModeBtn').addEventListener('click', () => {
         if (state.editMode) {
           state.editMode = false;
@@ -1218,6 +1438,22 @@
             renderAll();
             showToast('เปิดโหมดแก้ไขแล้ว');
           });
+        }
+      });
+
+      document.getElementById('saveOrderBtn').addEventListener('click', async () => {
+        const orderedCatIds = state.data.categories.map((c) => c.id);
+        const orderedSysIds = state.data.systems.map((s) => s.id);
+        setLoading(true, 'กำลังบันทึกลำดับใหม่ลง Google Sheets...');
+        try {
+          state.data = await callBackend('saveOrder', state.adminPin, orderedCatIds, orderedSysIds);
+          state.hasUnsavedOrder = false;
+          renderAll();
+          showToast('บันทึกลำดับใหม่เรียบร้อยแล้ว');
+        } catch (err) {
+          showToast('บันทึกลำดับไม่สำเร็จ: ' + err.message, 'error');
+        } finally {
+          setLoading(false);
         }
       });
 
@@ -1341,12 +1577,13 @@
           imageUrl: document.getElementById('sysImageUrlInput').value.trim(),
           imageBase64: state.pendingSysImageBase64,
           clearImage: state.pendingSysClearImage,
-          icon: document.getElementById('sysIconSelect').value,
+          icon: document.getElementById('sysIconInput').value,
           color: document.getElementById('sysColorSelect').value
         };
         setLoading(true, state.pendingSysImageBase64 ? 'กำลังอัปโหลดรูปขึ้น Drive และบันทึก...' : 'กำลังบันทึกลง Google Sheets...');
         try {
           state.data = await callBackend('saveSystem', state.adminPin, payload);
+          state.hasUnsavedOrder = false;
           closeModal('systemModal');
           renderAll();
           showToast(payload.id ? 'บันทึกการแก้ไขระบบแล้ว' : 'เพิ่มปุ่มระบบใหม่แล้ว');
@@ -1367,12 +1604,13 @@
           id,
           name: document.getElementById('catNameInput').value.trim(),
           desc: document.getElementById('catDescInput').value.trim(),
-          icon: document.getElementById('catIconSelect').value,
+          icon: document.getElementById('catIconInput').value,
           color: document.getElementById('catColorSelect').value
         };
         setLoading(true, 'กำลังบันทึกหมวดหมู่...');
         try {
           state.data = await callBackend('saveCategory', state.adminPin, payload);
+          state.hasUnsavedOrder = false;
           if (!id && state.data.categories.length > 0) {
             state.activeCategoryId = state.data.categories[state.data.categories.length - 1].id;
           }
@@ -1397,52 +1635,11 @@
         closeModal('confirmModal');
         if (typeof cb === 'function') await cb();
       });
-
-      // Export / Import / Refresh
-      document.getElementById('exportJsonBtn').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'portal-backup.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        showToast('ส่งออกไฟล์ JSON เรียบร้อยแล้ว');
-      });
-
-      document.getElementById('importJsonBtn').addEventListener('click', () => {
-        document.getElementById('importFileInput').click();
-      });
-
-      document.getElementById('importFileInput').addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-          try {
-            const parsed = JSON.parse(ev.target.result);
-            setLoading(true, 'กำลังนำเข้าข้อมูลลง Google Sheets...');
-            state.data = await callBackend('importPortalJson', state.adminPin, parsed);
-            state.activeCategoryId = 'all';
-            renderAll();
-            showToast('นำเข้าข้อมูลเรียบร้อยแล้ว');
-          } catch (err) {
-            showToast('นำเข้าไม่สำเร็จ: ' + err.message, 'error');
-          } finally {
-            setLoading(false);
-          }
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-      });
-
-      document.getElementById('refreshDataBtn').addEventListener('click', () => loadPortalFromBackend(true));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       initEvents();
+      startLiveClock();
       renderAll();
       loadPortalFromBackend(true);
     });
